@@ -417,21 +417,6 @@ function MarketingConsentBottomFields({
         />
       </Row>
 
-      <div className="my-3 rounded border bg-gray-50 p-3">
-        <div className="mb-2 text-xs font-semibold text-gray-600">
-          가이드 카드 (925×570)
-        </div>
-        <p className="mb-2 text-[11px] text-gray-500">
-          오렌지 헤더 · 3-step phones · 라벨 · 스위치 데코가 모두 포함된 지자체별 이미지 한 장.
-          라이브러리 태그 <code>role:mkt-consent-card</code> · <code>service:{"{지자체}"}</code> 으로 검색.
-        </p>
-        <ImageField
-          label="가이드 카드 이미지"
-          value={block.guideImageUrl}
-          onChange={(url) => patch({ guideImageUrl: url })}
-        />
-      </div>
-
       <SectionToggle
         title="유의사항"
         visible={block.noticeVisible !== false}
