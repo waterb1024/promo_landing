@@ -43,6 +43,49 @@ export function Sidebar({ pages }: { pages: DetailPage[] }) {
     router.refresh();
   };
 
+  const duplicate = async (p: DetailPage, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (busy) return;
+    setBusy(true);
+    // 원본 페이지 통째 fetch
+    const fetchRes = await fetch(`/api/pages/${p.id}`);
+    if (!fetchRes.ok) {
+      setBusy(false);
+      alert("원본 로드 실패");
+      return;
+    }
+    const { page: original } = (await fetchRes.json()) as { page: DetailPage };
+    const newId =
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID().slice(0, 8)
+        : Math.random().toString(36).slice(2, 10);
+    // 블록 id 도 새로 부여 (충돌 방지)
+    const newBlockId = () =>
+      typeof crypto !== "undefined" && "randomUUID" in crypto
+        ? crypto.randomUUID().slice(0, 8)
+        : Math.random().toString(36).slice(2, 10);
+    const clone: DetailPage = {
+      ...original,
+      id: newId,
+      title: `${original.title} (복사)`,
+      status: "draft",
+      blocks: original.blocks.map((b) => ({ ...b, id: newBlockId() }))
+    };
+    const res = await fetch("/api/pages", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(clone)
+    });
+    setBusy(false);
+    if (!res.ok) {
+      alert("복제 실패");
+      return;
+    }
+    router.push(`/admin/pages/${newId}`);
+    router.refresh();
+  };
+
   const create = async () => {
     setBusy(true);
     const id =
@@ -145,16 +188,28 @@ export function Sidebar({ pages }: { pages: DetailPage[] }) {
                       <span>· {p.blocks.length}개</span>
                     </span>
                   </Link>
-                  <button
-                    type="button"
-                    onClick={(e) => remove(p, e)}
-                    disabled={busy}
-                    title="삭제"
-                    aria-label={`${p.title || "페이지"} 삭제`}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-xs text-gray-400 opacity-0 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100 disabled:pointer-events-none"
-                  >
-                    🗑
-                  </button>
+                  <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-0.5 opacity-0 group-hover:opacity-100">
+                    <button
+                      type="button"
+                      onClick={(e) => duplicate(p, e)}
+                      disabled={busy}
+                      title="복제"
+                      aria-label={`${p.title || "페이지"} 복제`}
+                      className="rounded p-1 text-xs text-gray-400 hover:bg-blue-50 hover:text-blue-600 disabled:pointer-events-none"
+                    >
+                      ⧉
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => remove(p, e)}
+                      disabled={busy}
+                      title="삭제"
+                      aria-label={`${p.title || "페이지"} 삭제`}
+                      className="rounded p-1 text-xs text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none"
+                    >
+                      🗑
+                    </button>
+                  </div>
                 </li>
               );
             })}
