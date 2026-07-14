@@ -5,8 +5,8 @@
 
 import { PNG } from "pngjs";
 
-const PASTEL_L_MIN = 0.87;
-const PASTEL_L_MAX = 0.93;
+const PASTEL_L_MIN = 0.9;
+const PASTEL_L_MAX = 0.95;
 const ACCENT_L_TARGET = 0.5;
 const ACCENT_S_MIN = 0.55;
 
