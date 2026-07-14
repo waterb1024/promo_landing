@@ -10,6 +10,7 @@ import {
   type BlockType,
   type DetailPage
 } from "@/lib/blocks/types";
+import { SERVICES } from "@/lib/services";
 import { BlockFields } from "./BlockFields";
 
 export function Editor({ initial }: { initial: DetailPage }) {
@@ -116,16 +117,40 @@ export function Editor({ initial }: { initial: DetailPage }) {
       <header className="flex items-center justify-between border-b bg-white px-4 py-3">
         <div className="flex items-center gap-3">
           <input
+            value={page.service}
+            list="admin-services"
+            onChange={(e) => {
+              const newService = e.target.value;
+              patch((p) => {
+                // 서비스 선택 시 제목이 비어있거나 기본값이면 자동 채움
+                const shouldAutoTitle =
+                  !p.title ||
+                  p.title === "새 상세페이지" ||
+                  p.title === `${p.service} 상세페이지`;
+                return {
+                  ...p,
+                  service: newService,
+                  title: shouldAutoTitle && newService
+                    ? `${newService} 상세페이지`
+                    : p.title
+                };
+              });
+            }}
+            className="w-44 rounded border px-2 py-1 text-sm"
+            placeholder="서비스 선택 · 직접 입력"
+          />
+          <datalist id="admin-services">
+            {SERVICES.map((s) => (
+              <option key={s.key} value={s.service}>
+                {s.label}
+              </option>
+            ))}
+          </datalist>
+          <input
             value={page.title}
             onChange={(e) => patch((p) => ({ ...p, title: e.target.value }))}
-            className="rounded border px-2 py-1 text-sm"
+            className="w-72 rounded border px-2 py-1 text-sm"
             placeholder="페이지 제목"
-          />
-          <input
-            value={page.service}
-            onChange={(e) => patch((p) => ({ ...p, service: e.target.value }))}
-            className="w-40 rounded border px-2 py-1 text-sm"
-            placeholder="서비스 (예: 인천사랑상품권)"
           />
           <span className="text-xs text-gray-500">
             {page.status} {dirty ? "· 변경사항 있음" : ""}
