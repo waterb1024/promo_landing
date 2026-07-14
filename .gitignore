@@ -14,3 +14,5 @@ data/pages/*.json
 data/assets/*
 data/assets.json
 .playwright
+# TypeScript incremental build cache
+*.tsbuildinfo
