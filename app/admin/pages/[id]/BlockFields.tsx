@@ -119,7 +119,9 @@ function ImageField({
         open={open}
         onClose={() => setOpen(false)}
         onSelect={(asset: Asset) => {
-          onChange(`/api/assets/${asset.id}/file`);
+          // PNG 는 흰 배경 자동 투명화 (?transparent=1)
+          const suffix = asset.mime === "image/png" ? "?transparent=1" : "";
+          onChange(`/api/assets/${asset.id}/file${suffix}`);
           setOpen(false);
         }}
       />

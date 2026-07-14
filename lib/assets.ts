@@ -116,11 +116,18 @@ export async function deleteAsset(id: string): Promise<boolean> {
   } catch {
     // ignore
   }
+  // 투명 버전 캐시도 함께 제거 (있으면)
+  try {
+    await fs.rm(path.join(ASSETS_DIR, `${id}.transparent.png`), { force: true });
+  } catch {
+    // ignore
+  }
   return true;
 }
 
-export function assetUrl(id: string) {
-  return `/api/assets/${id}/file`;
+export function assetUrl(id: string, opts?: { transparent?: boolean }) {
+  const q = opts?.transparent ? "?transparent=1" : "";
+  return `/api/assets/${id}/file${q}`;
 }
 
 function mimeToExt(mime: string): string {
