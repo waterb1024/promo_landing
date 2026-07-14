@@ -1,0 +1,9 @@
+{
+  "codeConnect": {
+    "include": ["lib/blocks/**/*.figma.tsx"],
+    "importPaths": {
+      "lib/blocks/*": "@/lib/blocks/*"
+    },
+    "parser": "react"
+  }
+}

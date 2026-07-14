@@ -1,0 +1,16 @@
+node_modules
+.next
+out
+.DS_Store
+*.log
+.env
+.env.local
+.env.*.local
+next-env.d.ts
+data/exports
+data/uploads
+# 사용자 콘텐츠 · 임포트된 자산 (런타임 상태 · 저장소에 커밋 안 함)
+data/pages/*.json
+data/assets/*
+data/assets.json
+.playwright
