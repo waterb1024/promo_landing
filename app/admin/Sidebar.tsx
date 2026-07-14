@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
 import type { DetailPage } from "@/lib/blocks/types";
-import { SERVICES } from "@/lib/services";
 
 export function Sidebar({ pages }: { pages: DetailPage[] }) {
   const pathname = usePathname();
@@ -44,7 +43,7 @@ export function Sidebar({ pages }: { pages: DetailPage[] }) {
     router.refresh();
   };
 
-  const create = async (service?: string) => {
+  const create = async () => {
     setBusy(true);
     const id =
       typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -55,8 +54,8 @@ export function Sidebar({ pages }: { pages: DetailPage[] }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         id,
-        title: service ? `${service} 상세페이지` : "새 상세페이지",
-        service: service ?? "",
+        title: "새 상세페이지",
+        service: "",
         status: "draft",
         blocks: []
       })
@@ -79,28 +78,12 @@ export function Sidebar({ pages }: { pages: DetailPage[] }) {
       </header>
 
       <div className="border-b bg-white p-3">
-        <div className="mb-2 text-[11px] font-semibold text-gray-500">
-          서비스 선택 후 생성
-        </div>
-        <div className="mb-2 grid grid-cols-2 gap-1">
-          {SERVICES.map((s) => (
-            <button
-              key={s.key}
-              onClick={() => create(s.service)}
-              disabled={busy}
-              className="rounded border bg-white px-2 py-1.5 text-xs hover:border-blue-500 hover:bg-blue-50 disabled:opacity-40"
-              title={s.service}
-            >
-              + {s.key}
-            </button>
-          ))}
-        </div>
         <button
-          onClick={() => create()}
+          onClick={create}
           disabled={busy}
-          className="w-full rounded border bg-white px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+          className="w-full rounded bg-black px-3 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
         >
-          {busy ? "생성 중…" : "+ 빈 페이지 (서비스 미지정)"}
+          {busy ? "생성 중…" : "+ 새 상세페이지"}
         </button>
       </div>
 
