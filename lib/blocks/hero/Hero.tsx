@@ -4,6 +4,8 @@ export function Hero({ block }: { block: HeroBlock }) {
   const bg = block.bg ?? "#dbf5ff";
   const labelBg = block.labelBg ?? "#2badd7";
   const labelColor = block.labelColor ?? "#ffffff";
+  const labelVisible = block.labelVisible !== false;
+  const subtitleVisible = block.subtitleVisible !== false;
 
   return (
     <section
@@ -13,7 +15,7 @@ export function Hero({ block }: { block: HeroBlock }) {
     >
       <div className="flex w-full flex-col items-center pt-[180px]">
         <div className="flex w-full flex-col items-center gap-[30px]">
-          {block.label ? (
+          {labelVisible && block.label ? (
             <div
               className="inline-flex items-center justify-center rounded-[555px] px-[40px] py-[20px]"
               style={{ backgroundColor: labelBg }}
@@ -45,7 +47,7 @@ export function Hero({ block }: { block: HeroBlock }) {
             {block.title}
           </h2>
 
-          {block.subtitle ? (
+          {subtitleVisible && block.subtitle ? (
             <p
               className="w-full text-center"
               style={{

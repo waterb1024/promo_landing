@@ -12,8 +12,10 @@ export type HeroBlock = BlockBase & {
   label?: string;
   labelColor?: string;
   labelBg?: string;
+  labelVisible?: boolean;
   title: string;
   subtitle?: string;
+  subtitleVisible?: boolean;
   bg?: string;
   imageUrl?: string;
   imageAlt?: string;

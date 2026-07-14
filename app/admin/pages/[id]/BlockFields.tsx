@@ -62,13 +62,20 @@ function ImageField({
   label,
   value,
   onChange,
-  onPalette
+  onApply
 }: {
   label: string;
   value: string | undefined;
   onChange: (url: string | undefined) => void;
-  /** PNG 자산 선택 시 백엔드에서 뽑아낸 파스텔·엑센트 컬러를 리턴 (선택). */
-  onPalette?: (palette: { pastel: string; accent: string }) => void;
+  /**
+   * PNG 자산이 asset picker 로 선택됐을 때 호출. URL 과 (옵셔널) 팔레트를
+   * 한 번에 전달하므로 부모는 원자적으로 patch 할 수 있어 stale closure 이슈 없음.
+   * 수동 URL 입력이나 "제거" 버튼은 onChange 로만 통보됨.
+   */
+  onApply?: (payload: {
+    url: string;
+    palette?: { pastel: string; accent: string };
+  }) => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -122,24 +129,30 @@ function ImageField({
         open={open}
         onClose={() => setOpen(false)}
         onSelect={async (asset: Asset) => {
+          setOpen(false);
           // PNG 는 흰 배경 자동 투명화 (?transparent=1)
           const isPng = asset.mime === "image/png";
           const suffix = isPng ? "?transparent=1" : "";
-          onChange(`/api/assets/${asset.id}/file${suffix}`);
-          setOpen(false);
-          // PNG + onPalette 콜백 있을 때만 dominant color 추출 요청 (백엔드 처리)
-          if (isPng && onPalette) {
+          const url = `/api/assets/${asset.id}/file${suffix}`;
+
+          // 팔레트 추출 (PNG 만, onApply 요청한 곳만) — 원자적 적용 위해 여기서 await
+          let palette: { pastel: string; accent: string } | undefined;
+          if (isPng && onApply) {
             try {
               const res = await fetch(`/api/assets/${asset.id}/palette`);
               if (res.ok) {
-                const j = (await res.json()) as {
-                  palette?: { pastel: string; accent: string };
-                };
-                if (j.palette) onPalette(j.palette);
+                const j = (await res.json()) as { palette?: typeof palette };
+                if (j.palette) palette = j.palette;
               }
             } catch {
-              // 실패해도 이미지는 이미 적용됨 — 무시
+              // 팔레트 실패해도 URL 은 적용
             }
+          }
+
+          if (onApply) {
+            onApply({ url, palette });
+          } else {
+            onChange(url);
           }
         }}
       />
@@ -155,34 +168,55 @@ function HeroFields({
   onChange: (next: HeroBlock) => void;
 }) {
   const patch = (p: Partial<HeroBlock>) => onChange({ ...block, ...p });
+  const labelVisible = block.labelVisible !== false;
+  const subtitleVisible = block.subtitleVisible !== false;
+
   return (
     <div>
-      <Row label="라벨 (뱃지)">
-        <input
-          className={inputCls}
-          value={block.label ?? ""}
-          onChange={(e) => patch({ label: e.target.value })}
-          placeholder="예: 인천사랑상품권"
-        />
-      </Row>
-      <div className="grid grid-cols-2 gap-2">
-        <Row label="라벨 배경">
-          <input
-            type="color"
-            className="h-9 w-full rounded border"
-            value={block.labelBg ?? "#2badd7"}
-            onChange={(e) => patch({ labelBg: e.target.value })}
-          />
-        </Row>
-        <Row label="라벨 글자색">
-          <input
-            type="color"
-            className="h-9 w-full rounded border"
-            value={block.labelColor ?? "#ffffff"}
-            onChange={(e) => patch({ labelColor: e.target.value })}
-          />
-        </Row>
+      <div className="mb-3 rounded border bg-gray-50 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-semibold text-gray-600">라벨 (뱃지)</span>
+          <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={labelVisible}
+              onChange={(e) => patch({ labelVisible: e.target.checked })}
+            />
+            <span>{labelVisible ? "노출" : "숨김"}</span>
+          </label>
+        </div>
+        {labelVisible && (
+          <>
+            <Row label="라벨 텍스트">
+              <input
+                className={inputCls}
+                value={block.label ?? ""}
+                onChange={(e) => patch({ label: e.target.value })}
+                placeholder="예: 인천사랑상품권"
+              />
+            </Row>
+            <div className="grid grid-cols-2 gap-2">
+              <Row label="라벨 배경">
+                <input
+                  type="color"
+                  className="h-9 w-full rounded border"
+                  value={block.labelBg ?? "#2badd7"}
+                  onChange={(e) => patch({ labelBg: e.target.value })}
+                />
+              </Row>
+              <Row label="라벨 글자색">
+                <input
+                  type="color"
+                  className="h-9 w-full rounded border"
+                  value={block.labelColor ?? "#ffffff"}
+                  onChange={(e) => patch({ labelColor: e.target.value })}
+                />
+              </Row>
+            </div>
+          </>
+        )}
       </div>
+
       <Row label="타이틀 (줄바꿈은 Enter)">
         <textarea
           className={inputCls}
@@ -191,14 +225,30 @@ function HeroFields({
           onChange={(e) => patch({ title: e.target.value })}
         />
       </Row>
-      <Row label="서브 타이틀">
-        <textarea
-          className={inputCls}
-          rows={2}
-          value={block.subtitle ?? ""}
-          onChange={(e) => patch({ subtitle: e.target.value })}
-        />
-      </Row>
+
+      <div className="mb-3 rounded border bg-gray-50 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-semibold text-gray-600">서브 타이틀</span>
+          <label className="inline-flex cursor-pointer items-center gap-2 text-xs">
+            <input
+              type="checkbox"
+              checked={subtitleVisible}
+              onChange={(e) => patch({ subtitleVisible: e.target.checked })}
+            />
+            <span>{subtitleVisible ? "노출" : "숨김"}</span>
+          </label>
+        </div>
+        {subtitleVisible && (
+          <Row label="본문">
+            <textarea
+              className={inputCls}
+              rows={2}
+              value={block.subtitle ?? ""}
+              onChange={(e) => patch({ subtitle: e.target.value })}
+            />
+          </Row>
+        )}
+      </div>
       <Row label="배경색">
         <input
           type="color"
@@ -211,7 +261,14 @@ function HeroFields({
         label="이미지 (1080 × 1000, 선택)"
         value={block.imageUrl}
         onChange={(url) => patch({ imageUrl: url })}
-        onPalette={(p) => patch({ bg: p.pastel, labelBg: p.accent })}
+        onApply={({ url, palette }) =>
+          patch({
+            imageUrl: url,
+            ...(palette
+              ? { bg: palette.pastel, labelBg: palette.accent }
+              : {})
+          })
+        }
       />
     </div>
   );
