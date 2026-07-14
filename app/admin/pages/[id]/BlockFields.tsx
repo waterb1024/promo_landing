@@ -61,11 +61,14 @@ const inputCls =
 function ImageField({
   label,
   value,
-  onChange
+  onChange,
+  onPalette
 }: {
   label: string;
   value: string | undefined;
   onChange: (url: string | undefined) => void;
+  /** PNG 자산 선택 시 백엔드에서 뽑아낸 파스텔·엑센트 컬러를 리턴 (선택). */
+  onPalette?: (palette: { pastel: string; accent: string }) => void;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -118,11 +121,26 @@ function ImageField({
       <AssetPicker
         open={open}
         onClose={() => setOpen(false)}
-        onSelect={(asset: Asset) => {
+        onSelect={async (asset: Asset) => {
           // PNG 는 흰 배경 자동 투명화 (?transparent=1)
-          const suffix = asset.mime === "image/png" ? "?transparent=1" : "";
+          const isPng = asset.mime === "image/png";
+          const suffix = isPng ? "?transparent=1" : "";
           onChange(`/api/assets/${asset.id}/file${suffix}`);
           setOpen(false);
+          // PNG + onPalette 콜백 있을 때만 dominant color 추출 요청 (백엔드 처리)
+          if (isPng && onPalette) {
+            try {
+              const res = await fetch(`/api/assets/${asset.id}/palette`);
+              if (res.ok) {
+                const j = (await res.json()) as {
+                  palette?: { pastel: string; accent: string };
+                };
+                if (j.palette) onPalette(j.palette);
+              }
+            } catch {
+              // 실패해도 이미지는 이미 적용됨 — 무시
+            }
+          }
         }}
       />
     </Row>
@@ -193,6 +211,7 @@ function HeroFields({
         label="이미지 (1080 × 1000, 선택)"
         value={block.imageUrl}
         onChange={(url) => patch({ imageUrl: url })}
+        onPalette={(p) => patch({ bg: p.pastel, labelBg: p.accent })}
       />
     </div>
   );
